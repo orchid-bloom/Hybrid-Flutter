@@ -1,0 +1,14 @@
+
+target 'iOSDemo' do
+  use_frameworks!
+  
+  pod 'FlutterEngine', :path => '../flutter_demo/.ios/Flutter/'
+  
+  target 'iOSDemoTests' do
+    inherit! :search_paths
+  end
+
+  target 'iOSDemoUITests' do
+  end
+
+end

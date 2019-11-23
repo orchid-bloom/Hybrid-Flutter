@@ -1,0 +1,6 @@
+framework module Pods_iOSDemo_iOSDemoUITests {
+  umbrella header "Pods-iOSDemo-iOSDemoUITests-umbrella.h"
+
+  export *
+  module * { export * }
+}

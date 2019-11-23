@@ -1,0 +1,16 @@
+PODS:
+  - FlutterEngine (0.0.1)
+
+DEPENDENCIES:
+  - FlutterEngine (from `../flutter_demo/.ios/Flutter/`)
+
+EXTERNAL SOURCES:
+  FlutterEngine:
+    :path: "../flutter_demo/.ios/Flutter/"
+
+SPEC CHECKSUMS:
+  FlutterEngine: 4d467ca80a04430ef98a35371040d04349baee0e
+
+PODFILE CHECKSUM: f7b806d206efa41ade248f7e83be47ba85e5012e
+
+COCOAPODS: 1.8.4
