@@ -1,4 +1,4 @@
-####准备工作
+#### 准备工作
 首先，我们分别用 Xcode 与 Android Studio 快速建立一个只有首页的基本工程，工程名分别为 iOSDemo 与 AndroidDemo.
 
 这时，Android 工程就已经准备好了；而对于 iOS 工程来说，由于基本工程并不支持以组件化的方式管理项目，因此我们还需要多做一步，将其改造成使用 CocoaPods 管理的工程，也就是要在 iOSDemo 根目录下创建一个只有基本信息的 Podfile 文件：
@@ -17,7 +17,7 @@ end
 ```
 然后，在命令行输入 pod install 后，会自动生成一个 iOSDemo.xcworkspace 文件，这时我们就完成了 iOS 工程改造。
 
-####Flutter 混编方案介绍
+#### Flutter 混编方案介绍
 如果你想要在已有的原生 App 里嵌入一些 Flutter 页面，有两个办法：
 
 + 将原生工程作为 Flutter 工程的子工程，由 Flutter 统一管理。这种模式，就是统一管理模式。
@@ -36,7 +36,7 @@ end
 
 三端工程分离模式的关键是抽离 Flutter 工程，将不同平台的构建产物依照标准组件化的形式进行管理，即 Android 使用 aar、iOS 使用 pod。也就是可以像引用其他第三方原生组件库那样快速接入 Flutter 。
 
-####集成 Flutter
+#### 集成 Flutter
 
 原生工程对 Flutter 的依赖主要分为两部分：
 + Flutter 库和引擎，也就是 Flutter 的 Framework 库和引擎库。
@@ -48,17 +48,48 @@ end
 Flutter create -t module flutter_demo
 ```
 
-</br>
 然后我们分别对 flutter_demo 进行集成
-###iOS 模块集成
+<br/>
+
+### iOS 模块集成
+
+先说一下官方集成Flutter方式 [wiki](https://github.com/flutter/flutter/wiki/Add-Flutter-to-existing-apps)，里面用的两个脚本 podhelper.rb 和xcode_backend.sh 分别在Podfile和Build Phases里面
+
+```
+flutter_application_path = '../flutter_demo/'
+eval(File.read(File.join(flutter_application_path, '.ios', 'Flutter', 'podhelper.rb')), binding)
+```
+
+```
+"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh" build
+"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh" embed
+```
+
+
+解释下这两个脚本的作用：
+
+1.podhelper.rb
+
++ 通过Pod引入Flutter.framework（Flutter引擎），以及Flutter的插件注册表FlutterPluginRegistrant（创建的工程中GeneratedPluginRegistrant.{h,m}文件中）
++ 引入.flutter-plugins的依赖
++ 导入Generated.xcconfig配置，这里面放的是Flutter要用的环境变量（如：xcode_backend.sh开头就要用的$FLUTTER_ROOT）
+
+2.xcode_backend.sh
+
+这个脚本原本是放在Build Phases，在Debug和Release模式下分别会产出对应环境的Flutter产物（Flutter有Debug，Profile，Release三个模式）。并且里面还有一句代码是：
+
+```
+RunCommand cp -r -- "${app_framework}" "${derived_dir}"
+```
+
++ 在Debug和Release下构建出对应的Flutter产物，App.framework，flutter_assets（App.framework就是我们在lib下面写的Dart代码，flutter_assets就是我们资源）把上面的产物拷贝到App包里
 
 在 iOS 平台，原生工程对 Flutter 的依赖分别是:
 
 + Flutter 库和引擎，即 Flutter.framework；
 + Flutter 工程的产物，即 App.framework。
 
-
-iOS 平台的对 Flutter 模块依赖，实际上就是通过打包命令生成这两个产物，并将它们封装成一个 pod 供原生工程引用。
+iOS 平台的对 Flutter 模块依赖，实际上就是通过打包命令生成这两个产物，我们将它们封装成一个 pod 供原生工程引用，这里我们解除对Flutter工程的依赖，podhelper.rb，xcode_backend.sh脚本我们不使用。
 
 ```
 Flutter build ios --debug 
@@ -68,7 +99,7 @@ Flutter build ios --debug
 
 接下来，我们让iOSDemo依赖Flutter的编译的这两个产物，这里使用cocoapods进行依赖：
 
-我们在/flutter_demo/.ios/Flutter目录创建FlutterEngine.podspec文件
+我们在/flutter_demo/.ios/Flutter目录创建FlutterEngine.podspec文件（路径可以修改成想要的位置）
 
 ``
 pod spec create FlutterEngine
@@ -133,9 +164,10 @@ pod install 一下，Flutter 模块就集成进 iOS 原生工程中了。
 点击xcode运行，最后点击运行，官方的 Flutter Widget 也展示出来了。至此，iOS 工程的接入就完了。
 
 
-![](/Users/app/Desktop/ios_demo_s.png)
+![ios_demo_s.png](https://upload-images.jianshu.io/upload_images/1419920-8313985287ff2dcf.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
 
-###Android 模块集成
+
+### Android 模块集成
 Android 原生工程对 Flutter 的依赖主要分为两部分，对应到 Android 平台，这两部分分别是：
 
 + Flutter 库和引擎，也就是 icudtl.dat、libFlutter.so，还有一些 class 文件。这些文件都封装在 Flutter.jar 中。
@@ -165,4 +197,15 @@ setContentView(FlutterView);
 
 最后点击运行， Flutter Widget 就展示出来了.
 
-![](/Users/app/Desktop/android_demo_s.png)
+![android_demo_s.png](https://upload-images.jianshu.io/upload_images/1419920-646cf61b09d99971.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240)
+
+IOS，Android 集成这里是手动拷贝pod, aar，多人维护很麻烦，可以本地测试用debug包，提交用release包，或者把aar/pod以版本的方式发布到私有Maven/Cocoapod，以组件名+版本的方式在工程中引用，不直接管理打包构建产物。
+
+对于三端工程分离模式最主要的则是抽离 Flutter 工程，将不同平台的构建产物依照标准组件化的形式进行管理，即：针对 Android 平台打包构建生成 aar，通过 build.gradle 进行依赖管理；针对 iOS 平台打包构建生成 framework，将其封装成独立的 pod，并通过 podfile 进行依赖管理。
+
+至此原生集成Flutter就分享完了，附上[demo](https://github.com/temagit/Hybrid-Flutter.git)，欢迎大家留言探讨。
+
+##### 参考文献
+[flutter-wiki](https://github.com/flutter/flutter/wiki/Add-Flutter-to-existing-apps)
+
+
